@@ -15,15 +15,17 @@ var (
 )
 
 type Storage struct {
-	Users UsersStore
-	Roles interface {
+	Users    UsersStore
+	Category CategoryStore
+	Roles    interface {
 		GetByName(context.Context, string) (*Role, error)
 	}
 }
 
 func NewStorage(db *gorm.DB) Storage {
 	return Storage{
-		Users: UsersStore{db},
-		Roles: &RoleStore{db},
+		Users:    UsersStore{db},
+		Category: CategoryStore{db},
+		Roles:    &RoleStore{db},
 	}
 }
