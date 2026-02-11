@@ -85,6 +85,18 @@ func (app *application) mount() http.Handler {
 		})
 	})
 
+	r.Route("/assets", func(r chi.Router) {
+		r.Post("/", app.createAssetHandler)
+
+		r.Route("/{assetID}", func(r chi.Router) {
+			r.Use(app.assetContextMiddleware)
+			r.Get("/", app.getAssetHandler)
+
+			r.Patch("/", app.updateAssetHandler)
+			r.Delete("/", app.deleteAssetHandler)
+		})
+	})
+
 	// Public routes
 	r.Route("/authentication", func(r chi.Router) {
 		r.Post("/user", app.registerUserHandler)
