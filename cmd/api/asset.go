@@ -15,8 +15,10 @@ type assetKey string
 const assetCtx assetKey = "asset"
 
 type CreateAssetPayload struct {
-	Name        string `json:"name" validate:"required,max=100"`
-	Description string `json:"description"`
+	Name         string `json:"name" validate:"required,max=100"`
+	SerialNumber string `json:"serialNumber" validate:"required,max=100"`
+	Description  string `json:"description"`
+	CategoryID   int64  `json:"categoryID" validate:"required"`
 }
 
 func (app *application) createAssetHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,8 +34,10 @@ func (app *application) createAssetHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	asset := &store.Asset{
-		Name:        payload.Name,
-		Description: payload.Description,
+		Name:         payload.Name,
+		SerialNumber: payload.SerialNumber,
+		Description:  payload.Description,
+		CategoryID:   payload.CategoryID,
 	}
 
 	ctx := r.Context()
