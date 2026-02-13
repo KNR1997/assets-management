@@ -97,6 +97,10 @@ func (app *application) mount() http.Handler {
 		})
 	})
 
+	r.Route("/asset-assignments", func(r chi.Router) {
+		r.Post("/", app.CreateAssetAssignmentHandler)
+	})
+
 	// Public routes
 	r.Route("/authentication", func(r chi.Router) {
 		r.Post("/user", app.registerUserHandler)
