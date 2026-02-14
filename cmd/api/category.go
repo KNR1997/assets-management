@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -89,10 +90,51 @@ func (app *application) updateCategoryHandler(w http.ResponseWriter, r *http.Req
 func (app *application) getCategoryHandler(w http.ResponseWriter, r *http.Request) {
 	category := getCategoryFromCtx(r)
 
-	if err := app.jsonResponse(w, http.StatusOK, category); err != nil {
+	response := ToCategoryResponse(category)
+
+	if err := app.jsonResponse(w, http.StatusOK, response); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
+}
+
+type CategoryResponse struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+func ToCategoryResponse(a *store.Category) CategoryResponse {
+	return CategoryResponse{
+		ID:          a.ID,
+		Name:        a.Name,
+		Description: a.Description,
+	}
+}
+
+func ToCategoryResponseList(categories []store.Category) []CategoryResponse {
+	responses := make([]CategoryResponse, 0, len(categories))
+
+	for i := range categories {
+		responses = append(responses, ToCategoryResponse(&categories[i]))
+	}
+
+	return responses
+}
+
+func (app *application) getAllCategoryHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	categories, err := app.store.Category.GetAll(ctx)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	response := ToCategoryResponseList(categories)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func (app *application) deleteCategoryHandler(w http.ResponseWriter, r *http.Request) {

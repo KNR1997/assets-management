@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -93,10 +94,53 @@ func (app *application) updateAssetHandler(w http.ResponseWriter, r *http.Reques
 func (app *application) getAssetHandler(w http.ResponseWriter, r *http.Request) {
 	asset := getAssetFromCtx(r)
 
-	if err := app.jsonResponse(w, http.StatusOK, asset); err != nil {
+	response := ToAssetResponse(asset)
+
+	if err := app.jsonResponse(w, http.StatusOK, response); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
+}
+
+type AssetResponse struct {
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	SerialNumber string `json:"serialNumber"`
+	Status       string `json:"status"`
+}
+
+func ToAssetResponse(a *store.Asset) AssetResponse {
+	return AssetResponse{
+		ID:           a.ID,
+		Name:         a.Name,
+		SerialNumber: a.SerialNumber,
+		Status:       string(a.Status),
+	}
+}
+
+func ToAssetResponseList(assets []store.Asset) []AssetResponse {
+	responses := make([]AssetResponse, 0, len(assets))
+
+	for i := range assets {
+		responses = append(responses, ToAssetResponse(&assets[i]))
+	}
+
+	return responses
+}
+
+func (app *application) getAllAssetHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	assets, err := app.store.Asset.GetAll(ctx)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	response := ToAssetResponseList(assets)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func (app *application) deleteAssetHandler(w http.ResponseWriter, r *http.Request) {

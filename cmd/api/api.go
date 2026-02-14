@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/knr1997/assets-management-apiserver/internal/auth"
 	"github.com/knr1997/assets-management-apiserver/internal/store"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -59,6 +60,16 @@ type dbConfig struct {
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
+	// CORS configuration
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by browsers
+	}))
+
 	// A good base middleware stack
 	r.Use(middleware.RequestID) // important for rate limiting
 	r.Use(middleware.RealIP)    // import for rate limiting and analytics and tracing
@@ -73,7 +84,8 @@ func (app *application) mount() http.Handler {
 		w.Write([]byte("all good"))
 	})
 
-	r.Route("/categories", func(r chi.Router) {
+	r.Route("/api/categories", func(r chi.Router) {
+		r.Get("/", app.getAllCategoryHandler)
 		r.Post("/", app.createCategoryHandler)
 
 		r.Route("/{categoryID}", func(r chi.Router) {
@@ -85,7 +97,8 @@ func (app *application) mount() http.Handler {
 		})
 	})
 
-	r.Route("/assets", func(r chi.Router) {
+	r.Route("/api/assets", func(r chi.Router) {
+		r.Get("/", app.getAllAssetHandler)
 		r.Post("/", app.createAssetHandler)
 
 		r.Route("/{assetID}", func(r chi.Router) {
@@ -102,7 +115,7 @@ func (app *application) mount() http.Handler {
 	})
 
 	// Public routes
-	r.Route("/authentication", func(r chi.Router) {
+	r.Route("/api/authentication", func(r chi.Router) {
 		r.Post("/user", app.registerUserHandler)
 		r.Post("/token", app.createTokenHandler)
 	})
