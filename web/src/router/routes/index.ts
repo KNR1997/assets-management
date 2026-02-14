@@ -31,6 +31,42 @@ export const basicRoutes = [
     isHidden: true,
   },
   {
+    name: 'Assets-ddd',
+    path: '/assets',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/asset/index.vue'),
+        name: 'Assets',
+        meta: {
+          title: 'Assets',
+          icon: 'fluent:quiz-20-regular',
+          affix: true,
+        },
+      },
+    ],
+    meta: { order: 2 },
+  },
+  {
+    name: 'Category-ddd',
+    path: '/categories',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/category/index.vue'),
+        name: 'Categories',
+        meta: {
+          title: 'Categories',
+          icon: 'fluent:quiz-20-regular',
+          affix: true,
+        },
+      },
+    ],
+    meta: { order: 2 },
+  },
+  {
     name: 'Quizzes-dev',
     path: '/quizzes',
     component: Layout,
@@ -84,23 +120,23 @@ export const basicRoutes = [
     ],
     meta: { order: 5 },
   },
-  //   {
-  //     name: 'Profile-dev',
-  //     path: '/profile',
-  //     component: Layout,
-  //     isHidden: true,
-  //     children: [
-  //       {
-  //         path: '',
-  //         component: () => import('@/views/profile/index.vue'),
-  //         name: 'Profile',
-  //         meta: {
-  //           title: 'Profile',
-  //           icon: 'user',
-  //           affix: true,
-  //         },
-  //       },
-  //     ],
-  //     meta: { order: 99 },
-  //   },
+    {
+      name: 'Profile-dev',
+      path: '/profile',
+      component: Layout,
+      isHidden: true,
+      children: [
+        {
+          path: '',
+          component: () => import('@/views/profile/index.vue'),
+          name: 'Profile',
+          meta: {
+            title: 'Profile',
+            icon: 'user',
+            affix: true,
+          },
+        },
+      ],
+      meta: { order: 99 },
+    },
 ]
