@@ -1,3 +1,58 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useMessage } from 'naive-ui'
+import { useRoute, useRouter } from 'vue-router'
+// assets
+import bgImg from '@/assets/images/login_bg.webp'
+// utils
+import { setToken } from '@/utils/auth/token'
+// icons
+import { Icon } from '@iconify/vue'
+// hooks
+import { useLogin } from '@/data/auth'
+// components
+import AppPage from '@/components/page/AppPage.vue'
+
+const router = useRouter()
+const { query } = useRoute()
+const { t } = useI18n({ useScope: 'global' })
+const message = useMessage()
+
+const { mutateAsync: login, isPending } = useLogin()
+
+const loginInfo = ref({
+  email: '',
+  password: '',
+})
+
+async function handleLogin() {
+  const { email, password } = loginInfo.value
+  if (!email || !password) {
+    message.warning(t('views.login.message_input_username_password'))
+    return
+  }
+  try {
+    const response = await login({ email, password })
+    // save token
+    setToken(response.data)
+    // toast message
+    message.success(t('views.login.message_login_success'))
+    // redirect
+    if (query.redirect) {
+      const path = query.redirect
+      Reflect.deleteProperty(query, 'redirect')
+      // @ts-ignore
+      router.push({ path, query })
+    } else {
+      router.push('/')
+    }
+  } catch (e: any) {
+    console.error('login error', e.error)
+  }
+}
+</script>
+
 <template>
   <AppPage :show-footer="true" bg-cover :style="{ backgroundImage: `url(${bgImg})` }">
     <div
@@ -7,19 +62,19 @@
     >
       <div hidden w-380 px-20 py-35 md:block>
         <!-- <icon-custom-front-page pt-10 text-300 color-primary></icon-custom-front-page> -->
-        <!-- <Icon text-24 icon="logos:vue" /> -->
+        <Icon text-100 icon="logos:vue" />
       </div>
       <div w-320 flex-col px-20 py-35>
-        <h5 f-c-c text-24 font-normal color="#6a6a6a">
+        <!-- <h5 f-c-c text-24 font-normal color="#6a6a6a">
           <icon-custom-logo mr-10 text-50 color-primary />{{ $t('app_name') }}
-        </h5>
+        </h5> -->
         <div mt-30>
           <n-input
-            v-model:value="loginInfo.username"
             autofocus
             class="h-50 items-center pl-10 text-16"
-            placeholder="admin"
-            :maxlength="20"
+            v-model:value="loginInfo.email"
+            type="email"
+            placeholder="Email"
           />
         </div>
         <div mt-30>
@@ -35,7 +90,15 @@
         </div>
 
         <div mt-20>
-          <n-button h-50 w-full rounded-5 text-16 type="primary" @click="handleLogin">
+          <n-button
+            h-50
+            w-full
+            rounded-5
+            text-16
+            type="primary"
+            @click="handleLogin"
+            :loading="isPending"
+          >
             Login
           </n-button>
         </div>
@@ -43,38 +106,3 @@
     </div>
   </AppPage>
 </template>
-
-<script setup lang="ts">
-import { Icon } from '@iconify/vue'
-import bgImg from '@/assets/images/login_bg.webp'
-import AppPage from '@/components/page/AppPage.vue'
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
-
-const router = useRouter()
-const { query } = useRoute()
-const { t } = useI18n({ useScope: 'global' })
-
-const loginInfo = ref({
-  username: '',
-  password: '',
-})
-
-async function handleLogin() {
-  const { username, password } = loginInfo.value
-  if (!username || !password) {
-    // $message.warning(t('views.login.message_input_username_password'))
-    return
-  }
-  try {
-    // const res = await api.login({ username, password: password.toString() })
-    if (query.redirect) {
-    } else {
-      router.push('/')
-    }
-  } catch (e: any) {
-    console.error('login error', e.error)
-  }
-}
-</script>
