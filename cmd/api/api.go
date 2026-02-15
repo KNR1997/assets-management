@@ -114,6 +114,11 @@ func (app *application) mount() http.Handler {
 		r.Post("/", app.CreateAssetAssignmentHandler)
 	})
 
+	r.Route("/api/profile", func(r chi.Router) {
+		r.Use(app.AuthTokenMiddleware)
+		r.Patch("/", app.updateUserHandler)
+	})
+
 	// Public routes
 	r.Route("/api/authentication", func(r chi.Router) {
 		r.Post("/user", app.registerUserHandler)
