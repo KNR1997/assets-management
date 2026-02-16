@@ -81,3 +81,23 @@ func (s *UsersStore) GetByEmail(ctx context.Context, email string) (*User, error
 
 	return &user, err
 }
+
+func (s *UsersStore) Update(ctx context.Context, user *User) error {
+	result := s.db.WithContext(ctx).
+		Model(&User{}).
+		Where("id = ?", user.ID).
+		Updates(map[string]interface{}{
+			"username": user.Username,
+			"email":    user.Email,
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
