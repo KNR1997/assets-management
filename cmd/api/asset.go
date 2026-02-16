@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/knr1997/assets-management-apiserver/internal/api/requests"
+	"github.com/knr1997/assets-management-apiserver/internal/api/responses"
 	"github.com/knr1997/assets-management-apiserver/internal/store"
 )
 
@@ -94,38 +96,12 @@ func (app *application) updateAssetHandler(w http.ResponseWriter, r *http.Reques
 func (app *application) getAssetHandler(w http.ResponseWriter, r *http.Request) {
 	asset := getAssetFromCtx(r)
 
-	response := ToAssetResponse(asset)
+	response := responses.NewAssetResponse(asset)
 
 	if err := app.jsonResponse(w, http.StatusOK, response); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
-}
-
-type AssetResponse struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	SerialNumber string `json:"serialNumber"`
-	Status       string `json:"status"`
-}
-
-func ToAssetResponse(a *store.Asset) AssetResponse {
-	return AssetResponse{
-		ID:           a.ID,
-		Name:         a.Name,
-		SerialNumber: a.SerialNumber,
-		Status:       string(a.Status),
-	}
-}
-
-func ToAssetResponseList(assets []store.Asset) []AssetResponse {
-	responses := make([]AssetResponse, 0, len(assets))
-
-	for i := range assets {
-		responses = append(responses, ToAssetResponse(&assets[i]))
-	}
-
-	return responses
 }
 
 func (app *application) getAllAssetHandler(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +113,7 @@ func (app *application) getAllAssetHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	response := ToAssetResponseList(assets)
+	response := responses.NewAssetsResponse(assets)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
@@ -164,6 +140,50 @@ func (app *application) deleteAssetHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) checkoutAssetHandler(w http.ResponseWriter, r *http.Request) {
+	asset := getAssetFromCtx(r)
+	var payload requests.CheckoutAssetPayload
+
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// 🔒 Business rule
+	if asset.Status != store.AssetAvailable {
+		app.badRequestResponse(w, r, errors.New("asset is not available"))
+		return
+	}
+
+	ctx := r.Context()
+
+	assetLoan := &store.AssetLoan{
+		AssetName:           payload.AssetName,
+		AssetID:             payload.AssetID,
+		UserID:              payload.UserID,
+		CheckoutDate:        payload.CheckoutDate,
+		ExpectedCheckinDate: payload.ExpectedCheckinDate,
+		Notes:               payload.Notes,
+	}
+
+	if err := app.store.AssetLoan.Create(ctx, assetLoan); err != nil {
+		app.internalServerError(w, r, err)
+	}
+
+	if err := app.store.Asset.UpdateStatus(ctx, asset.ID, store.AssetAssigned); err != nil {
+		app.internalServerError(w, r, err)
+	}
+
+	app.jsonResponse(w, http.StatusCreated, map[string]string{
+		"status": "asset assigned successfully",
+	})
 }
 
 func (app *application) assetContextMiddleware(next http.Handler) http.Handler {
